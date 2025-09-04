@@ -131,7 +131,6 @@ class SABDAScraper:
             if any(skip in line.lower() for skip in ['sabda.org', 'publikasi', 'versi cetak', 'http://', 'https://']):
                 continue
             
-            
             if any(footer in line.lower() for footer in ['yayasan lembaga sabda', 'webmaster@', 'ylsa.org']):
                 break
                 
