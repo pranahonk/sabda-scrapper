@@ -38,6 +38,9 @@ class SABDAScraper:
             # Construct URL
             url = f"https://www.sabda.org/publikasi/e-sh/cetak/?tahun={year}&edisi={formatted_date}"
             
+            # Construct source URL for metadata
+            source_url = f"https://www.sabda.org/publikasi/e-sh/{year}/{formatted_date[:2]}/{formatted_date[2:]}/"
+            
             # Add random delay to avoid being detected as bot
             delay_min = current_app.config.get('SCRAPING_DELAY_MIN', 2)
             delay_max = current_app.config.get('SCRAPING_DELAY_MAX', 5)
@@ -60,8 +63,10 @@ class SABDAScraper:
                 data=content_data,
                 metadata={
                     "url": url,
+                    "source": source_url,
                     "scraped_at": datetime.now().isoformat(),
-                    "source": "SABDA.org"
+                    "copyright": f"Copyright © 1997-{datetime.now().year} Yayasan Lembaga SABDA (YLSA).",
+                    "provider": "SABDA.org"
                 }
             )
             
