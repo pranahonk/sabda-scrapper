@@ -100,9 +100,21 @@ class SABDAScraper:
         # Get all text content
         main_text = soup.get_text()
         
-        # Clean up the text
+        # Clean up the text and remove donation footer
         lines = [line.strip() for line in main_text.split('\n') if line.strip()]
-        clean_text = '\n'.join(lines)
+        
+        # Filter out donation footer text
+        filtered_lines = []
+        for line in lines:
+            # Skip the donation footer text
+            if ('Mari memberkati para hamba Tuhan' in line or 
+                'melalui edisi Santapan Harian' in line or
+                'BCA 106.30066.22 Yay Pancar Pijar Alkitab' in line or
+                'Kirim dukungan Anda ke:' in line):
+                continue
+            filtered_lines.append(line)
+        
+        clean_text = '\n'.join(filtered_lines)
         
         # Extract scripture reference (pattern like "Lukas 13:18-21")
         scripture_match = re.search(r'([A-Za-z]+\s+\d+:\d+(?:-\d+)?)', clean_text)
