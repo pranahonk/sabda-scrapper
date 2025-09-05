@@ -2,7 +2,7 @@ services:
   - type: web
     name: sabda-scraper-go
     runtime: go
-    buildCommand: go build -o bin/server ./cmd/server
+    buildCommand: go mod tidy && go build -o bin/server ./cmd/server
     startCommand: ./bin/server
     healthCheckPath: /api/health
     envVars:
@@ -22,5 +22,5 @@ services:
         value: 60
       - key: ALLOWED_ORIGINS
         value: "*"
-      - key: FLASK_DEBUG
-        value: false
+      - key: GO_DEBUG
+        value: "false"

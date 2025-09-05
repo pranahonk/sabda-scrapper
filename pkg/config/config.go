@@ -55,7 +55,7 @@ func setDefaults() {
 	// Server defaults
 	viper.SetDefault("server.port", getEnvOrDefault("PORT", "5000"))
 	viper.SetDefault("server.host", "0.0.0.0")
-	viper.SetDefault("server.debug", getEnvBoolOrDefault("FLASK_DEBUG", false))
+	viper.SetDefault("server.debug", getEnvBoolOrDefault("GO_DEBUG", false))
 	viper.SetDefault("server.timeout", 30*time.Second)
 	viper.SetDefault("server.idle_timeout", 120*time.Second)
 	

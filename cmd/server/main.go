@@ -100,15 +100,14 @@ func setupRoutes(app *fiber.App, authHandler *handlers.AuthHandler, sabdaHandler
 	// API routes
 	api := app.Group("/api")
 
-	// Authentication routes
+	// Public routes (must be defined before protected routes)
+	api.Get("/health", sabdaHandler.HealthCheck)
 	api.Post("/auth/token", authHandler.GetToken)
 
 	// Protected routes
-	protected := api.Group("/", authHandler.AuthMiddleware())
-	protected.Get("/sabda", sabdaHandler.GetContent)
+	api.Get("/sabda", authHandler.AuthMiddleware(), sabdaHandler.GetContent)
 
-	// Public routes
-	api.Get("/health", sabdaHandler.HealthCheck)
+	// Home route (public)
 	app.Get("/", sabdaHandler.Home)
 }
 
