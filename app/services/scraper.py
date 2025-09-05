@@ -123,55 +123,59 @@ class SABDAScraper:
             devotional_title = title_match.group(2).strip()
             devotional_title = re.sub(r'\[.*?\]', '', devotional_title).strip()
             content['devotional_title'] = devotional_title
-           
-        paragraphs = []
-        current_paragraph = []
-        
-        for line in lines:           
-            if any(skip in line.lower() for skip in ['sabda.org', 'publikasi', 'versi cetak', 'http://', 'https://']):
-                continue
             
-            if any(footer in line.lower() for footer in ['yayasan lembaga sabda', 'webmaster@', 'ylsa.org']):
-                break
+        
+        
+        html_content = str(soup)
+        html_content = re.sub(r'<p[^>]*>\s*<small>.*?Mari memberkati.*?Yay Pancar Pijar Alkitab.*?</small>\s*</p>', '', html_content, flags=re.DOTALL)
+        
+        
+        cleaned_soup = BeautifulSoup(html_content, 'html5lib')
+        
+        
+        paragraph_tags = cleaned_soup.find_all('p')
+        paragraphs = []
+        
+        for p_tag in paragraph_tags:
+            
+            text = p_tag.get_text().strip()
+            if not text or text == '&nbsp;' or len(text) < 20:
+                continue
                 
             
-            if len(line) > 20 and not line.startswith('[') and not line.endswith(']'):
-                current_paragraph.append(line)
-            elif current_paragraph:
-                paragraphs.append(' '.join(current_paragraph))
-                current_paragraph = []
+            if any(skip in text.lower() for skip in ['sabda.org', 'publikasi', 'versi cetak', 'http://', 'https://']):
+                continue
+                
+            
+            if any(footer in text.lower() for footer in ['yayasan lembaga sabda', 'webmaster@', 'ylsa.org']):
+                continue
+                
+            
+            if any(donation in text.lower() for donation in ['mari memberkati', 'bca 106.30066.22', 'yay pancar pijar']):
+                continue
+                
+            
+            clean_text = re.sub(r'\s+', ' ', text).strip()
+            
+            if clean_text and len(clean_text) > 20:
+                paragraphs.append(clean_text)
         
-        
-        if current_paragraph:
-            paragraphs.append(' '.join(current_paragraph))
-        
-        cleaned_paragraphs = []
+        final_paragraphs = []
         for paragraph in paragraphs:
-            cleaned_paragraph = paragraph
             
-            cleaned_paragraph = re.sub(r'\[PMS\].*?(?:Mari memberkati|BCA 106\.30066\.22|Yay Pancar Pijar Alkitab).*', '', cleaned_paragraph, flags=re.DOTALL)
-            
-            
-            cleaned_paragraph = re.sub(r'Mari memberkati para hamba Tuhan.*?(?:BCA 106\.30066\.22|Yay Pancar Pijar Alkitab).*', '', cleaned_paragraph, flags=re.DOTALL)
-            
-            
-            cleaned_paragraph = re.sub(r'melalui edisi Santapan Harian.*?BCA 106\.30066\.22.*?Yay Pancar Pijar Alkitab.*', '', cleaned_paragraph, flags=re.DOTALL)
-            
-            
+            cleaned_paragraph = re.sub(r'\[PMS\].*', '', paragraph, flags=re.DOTALL)
+            cleaned_paragraph = re.sub(r'Mari memberkati.*', '', cleaned_paragraph, flags=re.DOTALL)
             cleaned_paragraph = re.sub(r'.*BCA 106\.30066\.22.*', '', cleaned_paragraph, flags=re.DOTALL)
-            
-            
-            cleaned_paragraph = re.sub(r'Kirim dukungan Anda ke:.*', '', cleaned_paragraph, flags=re.DOTALL)
+            cleaned_paragraph = re.sub(r'Kirim dukungan.*', '', cleaned_paragraph, flags=re.DOTALL)
             
             
             cleaned_paragraph = re.sub(r'\s+', ' ', cleaned_paragraph).strip()
-            cleaned_paragraph = re.sub(r'\s*\.\s*$', '.', cleaned_paragraph)  
             
             
-            if cleaned_paragraph and len(cleaned_paragraph) > 10:
-                cleaned_paragraphs.append(cleaned_paragraph)
+            if cleaned_paragraph and len(cleaned_paragraph) > 30:
+                final_paragraphs.append(cleaned_paragraph)
         
-        content['devotional_content'] = cleaned_paragraphs
+        content['devotional_content'] = final_paragraphs
         content['full_text'] = clean_text
         content['word_count'] = len(clean_text.split())
         
