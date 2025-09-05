@@ -12,7 +12,7 @@ import (
 	"github.com/pranahonk/sabda-scraper-go/internal/models"
 )
 
-// min returns the minimum of two integers
+
 func min(a, b int) int {
 	if a < b {
 		return a
@@ -20,30 +20,30 @@ func min(a, b int) int {
 	return b
 }
 
-// SABDAScraper handles scraping SABDA devotional content
+
 type SABDAScraper struct {
 	collector *colly.Collector
 }
 
-// New creates a new SABDA scraper instance
+
 func New(debug bool) *SABDAScraper {
 	c := colly.NewCollector(
 		colly.UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"),
 	)
 
-	// Debug logging is handled by the collector's built-in logging
+	
 
-	// Set random delays between requests (1-3 seconds)
+	
 	c.Limit(&colly.LimitRule{
 		DomainGlob:  "*",
 		Parallelism: 1,
 		Delay:       1 * time.Second,
 	})
 
-	// Set timeouts
+	
 	c.SetRequestTimeout(30 * time.Second)
 
-	// Random user agents
+	
 	userAgents := []string{
 		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
 		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
@@ -51,12 +51,12 @@ func New(debug bool) *SABDAScraper {
 		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15",
 	}
 
-	// Set anti-bot headers
+	
 	c.OnRequest(func(r *colly.Request) {
-		// Random user agent
+		
 		r.Headers.Set("User-Agent", userAgents[rand.Intn(len(userAgents))])
 		
-		// Anti-bot headers
+		
 		r.Headers.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 		r.Headers.Set("Accept-Language", "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7")
 		r.Headers.Set("Accept-Encoding", "gzip, deflate, br")
@@ -68,12 +68,12 @@ func New(debug bool) *SABDAScraper {
 		r.Headers.Set("Sec-Fetch-Site", "none")
 		r.Headers.Set("Cache-Control", "max-age=0")
 
-		// Add random delay before request
+		
 		delay := time.Duration(rand.Intn(2000)+1000) * time.Millisecond
 		time.Sleep(delay)
 	})
 
-	// Error handling
+	
 	c.OnError(func(r *colly.Response, err error) {
 		log.Printf("Error scraping %s: %v", r.Request.URL, err)
 	})
@@ -83,15 +83,15 @@ func New(debug bool) *SABDAScraper {
 	}
 }
 
-// ScrapeContent scrapes devotional content from SABDA website
+
 func (s *SABDAScraper) ScrapeContent(year int, date string) (*models.DevotionalContent, error) {
-	// Format date to MMDD
+	
 	formattedDate := fmt.Sprintf("%04s", date)
 	if len(formattedDate) != 4 {
 		return nil, fmt.Errorf("date must be in MMDD format")
 	}
 
-	// Try the direct content URL first, fallback to print view if needed
+	
 	url := fmt.Sprintf("https://www.sabda.org/publikasi/e-sh/%d/%s/%s", year, formattedDate[:2], formattedDate[2:])
 	printURL := fmt.Sprintf("https://www.sabda.org/publikasi/e-sh/cetak/?tahun=%d&edisi=%s", year, formattedDate)
 	log.Printf("Scraping URL: %s", url)
@@ -100,7 +100,7 @@ func (s *SABDAScraper) ScrapeContent(year int, date string) (*models.DevotionalC
 	var scrapingError error
 
 	s.collector.OnHTML("html", func(e *colly.HTMLElement) {
-		// Extract title
+		
 		title := e.ChildText("title")
 		if title == "" {
 			title = "SABDA Devotional"
@@ -110,9 +110,9 @@ func (s *SABDAScraper) ScrapeContent(year int, date string) (*models.DevotionalC
 		
 		var mainContent *goquery.Selection
 		
-		// Look for the main devotional content in aside.w elements
+		
 		if sel := e.DOM.Find("aside.w"); sel.Length() > 0 {
-			// Find the aside that contains paragraphs (devotional content)
+			
 			sel.Each(func(i int, aside *goquery.Selection) {
 				if aside.Find("P").Length() > 0 {
 					mainContent = aside
@@ -121,7 +121,7 @@ func (s *SABDAScraper) ScrapeContent(year int, date string) (*models.DevotionalC
 			})
 		}
 		
-		// Fallback to previous logic if aside.w not found
+		
 		if mainContent == nil {
 			if sel := e.DOM.Find("td.wj"); sel.Length() > 0 {
 				mainContent = sel.First()
@@ -144,14 +144,14 @@ func (s *SABDAScraper) ScrapeContent(year int, date string) (*models.DevotionalC
 			}
 		}
 
-		// Extract all text for processing
+		
 		allText := mainContent.Text()
 		log.Printf("Raw text length: %d", len(allText))
 		if len(allText) > 0 {
 			log.Printf("First 500 chars: %s", allText[:min(500, len(allText))])
 		}
 		
-		// Also try to extract HTML content for better parsing
+		
 		htmlContent, _ := mainContent.Html()
 		log.Printf("HTML content length: %d", len(htmlContent))
 		
@@ -166,23 +166,23 @@ func (s *SABDAScraper) ScrapeContent(year int, date string) (*models.DevotionalC
 		cleanText := strings.Join(cleanLines, "\n")
 		log.Printf("Clean text length: %d", len(cleanText))
 		
-		// If we have very little content, the page might not have loaded properly
+		
 		if len(cleanText) < 100 {
 			log.Printf("Warning: Very little content extracted, page might not have loaded properly")
 		}
 
-		// Extract scripture reference - first try from h1 or title elements
+		
 		scriptureRef := ""
 		if h1 := e.DOM.Find("h1"); h1.Length() > 0 {
 			h1Text := h1.Text()
-			// Look for scripture reference in h1 (e.g., "Mazmur 1")
+			
 			scriptureRegex := regexp.MustCompile(`\b([A-Za-z]+\s+\d+(?::\d+(?:-\d+)?)?)\b`)
 			if match := scriptureRegex.FindStringSubmatch(h1Text); len(match) > 1 {
 				scriptureRef = match[1]
 			}
 		}
 		
-		// Fallback to searching in the main text
+		
 		if scriptureRef == "" {
 			scriptureRegex := regexp.MustCompile(`\b([A-Za-z]+\s+\d+:\d+(?:-\d+)?)\b`)
 			if match := scriptureRegex.FindStringSubmatch(cleanText); len(match) > 1 {
@@ -190,15 +190,15 @@ func (s *SABDAScraper) ScrapeContent(year int, date string) (*models.DevotionalC
 			}
 		}
 		
-		// Update scripture reference after potential extraction from h1
+		
 		content.ScriptureReference = scriptureRef
 
-		// Extract devotional title - first try from h1 element
+		
 		devotionalTitle := ""
 		if h1 := e.DOM.Find("h1"); h1.Length() > 0 {
 			h1Text := strings.TrimSpace(h1.Text())
 			
-			// Extract scripture reference from title if not found yet
+			
 			if scriptureRef == "" {
 				scriptureRegex := regexp.MustCompile(`^([A-Za-z]+\s+\d+(?::\d+(?:-\d+)?)?)(.*)`)
 				if match := scriptureRegex.FindStringSubmatch(h1Text); len(match) > 2 {
@@ -206,26 +206,34 @@ func (s *SABDAScraper) ScrapeContent(year int, date string) (*models.DevotionalC
 					devotionalTitle = strings.TrimSpace(match[2])
 				}
 			} else {
-				// Remove scripture reference from title if present
+				
 				h1Text = strings.ReplaceAll(h1Text, scriptureRef, "")
 				devotionalTitle = strings.TrimSpace(h1Text)
 			}
 			
-			// Clean up the title
+			
+			if devotionalTitle != "" {
+				
+				devotionalTitle = regexp.MustCompile(`^-\d+`).ReplaceAllString(devotionalTitle, "")
+				devotionalTitle = strings.TrimSpace(devotionalTitle)
+			}
+			
 			if devotionalTitle != "" && len(devotionalTitle) > 3 {
-				// Keep the cleaned title
+				
 			} else if h1Text != "" && len(h1Text) > 3 {
-				devotionalTitle = h1Text
+				
+				h1Text = regexp.MustCompile(`^-\d+`).ReplaceAllString(h1Text, "")
+				devotionalTitle = strings.TrimSpace(h1Text)
 			}
 		}
 		
-		// Fallback to text-based extraction
+		
 		if devotionalTitle == "" {
 			devotionalTitle = s.extractDevotionalTitle(cleanText, scriptureRef)
 		}
 		content.DevotionalTitle = devotionalTitle
 		
-		// Update scripture reference after all extractions
+		
 		content.ScriptureReference = scriptureRef
 
 		
@@ -244,7 +252,7 @@ func (s *SABDAScraper) ScrapeContent(year int, date string) (*models.DevotionalC
 		log.Printf("Extracted %d paragraphs from %s", content.ParagraphCount, url)
 	})
 
-	// Visit the URL - try direct URL first, then fallback to print URL
+	
 	err := s.collector.Visit(url)
 	if err != nil || len(content.DevotionalContent) == 0 {
 		log.Printf("Direct URL failed or no content, trying print URL: %s", printURL)
@@ -266,17 +274,17 @@ func (s *SABDAScraper) ScrapeContent(year int, date string) (*models.DevotionalC
 }
 
 func (s *SABDAScraper) extractDevotionalTitle(text, scriptureRef string) string {
-	// Look for title patterns after scripture reference
+	
 	if scriptureRef != "" {
-		// Create a pattern to find the title that comes after scripture reference
-		// It usually appears in the format: "Lukas 14:1-6Critical Thinking"
+		
+		
 		scripturePattern := regexp.MustCompile(regexp.QuoteMeta(scriptureRef) + `([A-Za-z][^,.\n]*?)(?:\s|$)`)
 		match := scripturePattern.FindStringSubmatch(text)
 		if len(match) > 1 {
 			title := strings.TrimSpace(match[1])
-			// Clean up common artifacts
-			title = regexp.MustCompile(`^-?\d*`).ReplaceAllString(title, "")  // Remove leading numbers and dashes
-			title = regexp.MustCompile(`\s{2,}`).ReplaceAllString(title, " ") // Normalize whitespace
+			
+			title = regexp.MustCompile(`^-?\d*`).ReplaceAllString(title, "")  
+			title = regexp.MustCompile(`\s{2,}`).ReplaceAllString(title, " ") 
 			title = strings.TrimSpace(title)
 			
 			if len(title) > 2 && len(title) < 100 {
@@ -287,11 +295,11 @@ func (s *SABDAScraper) extractDevotionalTitle(text, scriptureRef string) string 
 	
 	lines := strings.Split(text, "\n")
 	
-	// Fallback: look for lines that appear to be titles
+	
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		
-		// Skip lines that are clearly not titles
+		
 		if len(line) < 3 || len(line) > 50 ||
 		   strings.HasPrefix(strings.ToLower(line), "ketika") ||
 		   strings.Contains(strings.ToLower(line), "diperhadapkan") ||
@@ -302,7 +310,7 @@ func (s *SABDAScraper) extractDevotionalTitle(text, scriptureRef string) string 
 			continue
 		}
 		
-		// Check if this looks like a title (starts with capital, reasonable length)
+		
 		if regexp.MustCompile(`^[A-Z][a-zA-Z\s!?]*$`).MatchString(line) {
 			return line
 		}
@@ -314,7 +322,7 @@ func (s *SABDAScraper) extractDevotionalTitle(text, scriptureRef string) string 
 func (s *SABDAScraper) extractParagraphs(selection *goquery.Selection) []string {
 	var paragraphs []string
 
-	// Look for both lowercase and uppercase P tags
+	
 	selection.Find("p, P").Each(func(i int, p *goquery.Selection) {
 		text := strings.TrimSpace(p.Text())
 		
@@ -457,13 +465,13 @@ func (s *SABDAScraper) extractParagraphsFromText(text string) []string {
 	return paragraphs
 }
 
-// buildFullText creates the full text from devotional content
+
 func (s *SABDAScraper) buildFullText(paragraphs []string) string {
 	if len(paragraphs) == 0 {
 		return ""
 	}
 	
-	// Use the last paragraph as the full text summary (usually contains the main message)
+	
 	if len(paragraphs) > 0 {
 		return paragraphs[len(paragraphs)-1]
 	}
