@@ -266,50 +266,44 @@ func (s *SABDAScraper) ScrapeContent(year int, date string) (*models.DevotionalC
 }
 
 func (s *SABDAScraper) extractDevotionalTitle(text, scriptureRef string) string {
+	// Look for title patterns after scripture reference
+	if scriptureRef != "" {
+		// Create a pattern to find the title that comes after scripture reference
+		// It usually appears in the format: "Lukas 14:1-6Critical Thinking"
+		scripturePattern := regexp.MustCompile(regexp.QuoteMeta(scriptureRef) + `([A-Za-z][^,.\n]*?)(?:\s|$)`)
+		match := scripturePattern.FindStringSubmatch(text)
+		if len(match) > 1 {
+			title := strings.TrimSpace(match[1])
+			// Clean up common artifacts
+			title = regexp.MustCompile(`^-?\d*`).ReplaceAllString(title, "")  // Remove leading numbers and dashes
+			title = regexp.MustCompile(`\s{2,}`).ReplaceAllString(title, " ") // Normalize whitespace
+			title = strings.TrimSpace(title)
+			
+			if len(title) > 2 && len(title) < 100 {
+				return title
+			}
+		}
+	}
+	
 	lines := strings.Split(text, "\n")
 	
-	// Look for patterns that indicate a title
-	titlePatterns := []string{
-		"Critical Thinking",
-		"Berpikir Kritis",
-	}
-	
-	// First try to find known title patterns
+	// Fallback: look for lines that appear to be titles
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		for _, pattern := range titlePatterns {
-			if strings.Contains(line, pattern) {
-				return pattern
-			}
+		
+		// Skip lines that are clearly not titles
+		if len(line) < 3 || len(line) > 50 ||
+		   strings.HasPrefix(strings.ToLower(line), "ketika") ||
+		   strings.Contains(strings.ToLower(line), "diperhadapkan") ||
+		   strings.Contains(strings.ToLower(line), "sabda") ||
+		   strings.Contains(strings.ToLower(line), "publikasi") ||
+		   strings.Contains(strings.ToLower(line), "http") ||
+		   strings.Contains(line, scriptureRef) {
+			continue
 		}
-	}
-	
-	// If scripture reference exists, look for title after it
-	if scriptureRef != "" {
-		for i, line := range lines {
-			if strings.Contains(line, scriptureRef) && i+1 < len(lines) {
-				nextLine := strings.TrimSpace(lines[i+1])
-				if len(nextLine) > 3 && len(nextLine) < 50 && 
-				   !strings.HasPrefix(strings.ToLower(nextLine), "ketika") &&
-				   !strings.Contains(strings.ToLower(nextLine), "diperhadapkan") {
-					// Clean up the title
-					title := regexp.MustCompile(`\[.*?\]|\s{2,}`).ReplaceAllString(nextLine, " ")
-					title = strings.TrimSpace(title)
-					if title != "" {
-						return title
-					}
-				}
-			}
-		}
-	}
-	
-	// Fallback: look for short lines that could be titles
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if len(line) > 5 && len(line) < 30 && 
-		   !strings.Contains(strings.ToLower(line), "sabda") &&
-		   !strings.Contains(strings.ToLower(line), "publikasi") &&
-		   !regexp.MustCompile(`\d+:\d+`).MatchString(line) {
+		
+		// Check if this looks like a title (starts with capital, reasonable length)
+		if regexp.MustCompile(`^[A-Z][a-zA-Z\s!?]*$`).MatchString(line) {
 			return line
 		}
 	}
