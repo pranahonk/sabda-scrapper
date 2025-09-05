@@ -1,12 +1,45 @@
-FROM python:3.11-slim
+# Build stage
+FROM golang:1.25.1-alpine AS builder
 
+# Install dependencies
+RUN apk add --no-cache git ca-certificates
+
+# Set working directory
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy go.mod and go.sum
+COPY go.mod go.sum ./
 
+# Download dependencies
+RUN go mod download
+
+# Copy source code
 COPY . .
 
-EXPOSE 5000
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/server ./cmd/server
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "run:app"]
+# Production stage
+FROM alpine:latest
+
+# Install ca-certificates for HTTPS requests
+RUN apk --no-cache add ca-certificates tzdata
+
+WORKDIR /root/
+
+# Copy binary from builder
+COPY --from=builder /app/bin/server .
+
+# Expose port
+EXPOSE 10000
+
+# Set environment variables
+ENV PORT=10000
+ENV GIN_MODE=release
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:10000/api/health || exit 1
+
+# Run the binary
+CMD ["./server"]

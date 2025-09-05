@@ -1,16 +1,26 @@
 services:
   - type: web
-    name: sabda-scraper
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    name: sabda-scraper-go
+    runtime: go
+    buildCommand: go build -o bin/server ./cmd/server
+    startCommand: ./bin/server
     healthCheckPath: /api/health
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
+      - key: PORT
+        value: 10000
       - key: SECRET_KEY
         generateValue: true
       - key: FLUTTER_API_KEY
         value: sabda_flutter_2025_secure_key
       - key: MOBILE_API_KEY
         value: sabda_mobile_2025_secure_key
+      - key: JWT_EXPIRATION_HOURS
+        value: 24
+      - key: CACHE_TTL
+        value: 3600
+      - key: MAX_REQUESTS_PER_MINUTE
+        value: 60
+      - key: ALLOWED_ORIGINS
+        value: "*"
+      - key: FLASK_DEBUG
+        value: false
