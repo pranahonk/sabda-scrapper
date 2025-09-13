@@ -2,7 +2,11 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "gunicorn run:app"
+startCommand = "./bin/server"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
+
+[variables]
+PORT = "8080"
+GO_DEBUG = "false"

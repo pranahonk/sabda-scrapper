@@ -1,0 +1,27 @@
+app = "sabda-scraper-go"
+primary_region = "sin"
+
+[build]
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256
+
+[env]
+  PORT = "8080"
+  GO_DEBUG = "false"
+  FLUTTER_API_KEY = "sabda_flutter_2025_secure_key"
+  MOBILE_API_KEY = "sabda_mobile_2025_secure_key"
+  JWT_EXPIRATION_HOURS = "24"
+  CACHE_TTL = "3600"
+  MAX_REQUESTS_PER_MINUTE = "60"
+  ALLOWED_ORIGINS = "*"
