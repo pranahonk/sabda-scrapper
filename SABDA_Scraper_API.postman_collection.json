@@ -1,0 +1,598 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "SABDA Scraper API",
+		"description": "Complete API collection for SABDA Scraper - Daily devotional content from SABDA.org with JWT authentication\n\n**Base URLs:**\n- Production: https://sabda-scrapper.onrender.com\n- Development: http://localhost:5000\n\n**Authentication:** JWT Bearer Token\n**Version:** 2.0.0",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12345678"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Generate JWT Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Test for successful token generation",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has token\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"success\");",
+									"    pm.expect(jsonData.data.token).to.exist;",
+									"    pm.expect(jsonData.data.token_type).to.eql(\"Bearer\");",
+									"    ",
+									"    // Store token for other requests",
+									"    pm.environment.set(\"jwt_token\", jsonData.data.token);",
+									"    pm.environment.set(\"token_expires_at\", jsonData.metadata.expires_at);",
+									"});",
+									"",
+									"pm.test(\"Token expires in 24 hours\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.expires_in).to.be.above(86000); // ~24 hours",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"api_key\": \"{{api_key}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"token"
+							]
+						},
+						"description": "Generate a JWT token for API access using your API key.\n\n**Default API Keys:**\n- Flutter: `sabda_flutter_2025_secure_key`\n- Mobile: `sabda_mobile_2025_secure_key`\n\n**Response includes:**\n- JWT token (valid for 24 hours)\n- Token type (Bearer)\n- Expiration time in seconds\n- Expiration timestamp"
+					},
+					"response": [
+						{
+							"name": "Successful Token Generation",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"api_key\": \"sabda_flutter_2025_secure_key\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/auth/token",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"auth",
+										"token"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"message\": \"Token generated successfully\",\n  \"data\": {\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlfa2V5IjoiZmx1dHRlciIsImV4cCI6MTcyNTQ4MzU5NiwiaWF0IjoxNzI1Mzk3MTk2fQ.example_token_here\",\n    \"token_type\": \"Bearer\",\n    \"expires_in\": 86400\n  },\n  \"metadata\": {\n    \"timestamp\": \"2025-09-03T22:06:36.193111\",\n    \"expires_at\": \"2025-09-04T15:06:36.193116\"\n  }\n}"
+						},
+						{
+							"name": "Invalid API Key",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"api_key\": \"invalid_key\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/auth/token",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"auth",
+										"token"
+									]
+								}
+							},
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"error\",\n  \"message\": \"Invalid API key\",\n  \"metadata\": {\n    \"error_type\": \"AuthenticationError\"\n  }\n}"
+						}
+					]
+				}
+			],
+			"description": "Authentication endpoints for generating and managing JWT tokens"
+		},
+		{
+			"name": "Content",
+			"item": [
+				{
+					"name": "Get SABDA Devotional Content",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Test for successful content retrieval",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response contains devotional content\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"success\");",
+									"    pm.expect(jsonData.data).to.exist;",
+									"    pm.expect(jsonData.data.devotional_title).to.exist;",
+									"    pm.expect(jsonData.data.scripture_reference).to.exist;",
+									"    pm.expect(jsonData.data.devotional_content).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Content has required fields\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var data = jsonData.data;",
+									"    pm.expect(data.title).to.exist;",
+									"    pm.expect(data.full_text).to.exist;",
+									"    pm.expect(data.word_count).to.be.a('number');",
+									"});",
+									"",
+									"pm.test(\"Metadata includes source info\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.metadata.url).to.exist;",
+									"    pm.expect(jsonData.metadata.source).to.eql(\"SABDA.org\");",
+									"    pm.expect(jsonData.metadata.authenticated).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/sabda?year={{year}}&date={{date}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"sabda"
+							],
+							"query": [
+								{
+									"key": "year",
+									"value": "{{year}}",
+									"description": "Year as integer (e.g., 2025)"
+								},
+								{
+									"key": "date",
+									"value": "{{date}}",
+									"description": "Date in MMDD format (e.g., 0902 for September 2nd)"
+								}
+							]
+						},
+						"description": "Retrieve devotional content for a specific date from SABDA.org\n\n**Authentication:** Required (JWT Bearer Token)\n\n**Parameters:**\n- `year`: Year as integer (e.g., 2025)\n- `date`: Date in MMDD format (e.g., \"0902\" for September 2nd)\n\n**Response includes:**\n- Devotional title and content\n- Scripture reference\n- Full text and word count\n- Source URL and metadata\n\n**Date Format Examples:**\n- January 1st: 0101\n- February 14th: 0214\n- September 2nd: 0902\n- December 25th: 1225"
+					},
+					"response": [
+						{
+							"name": "Successful Content Retrieval",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/sabda?year=2025&date=0902",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"sabda"
+									],
+									"query": [
+										{
+											"key": "year",
+											"value": "2025"
+										},
+										{
+											"key": "date",
+											"value": "0902"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"message\": \"Content scraped successfully\",\n  \"data\": {\n    \"title\": \"SABDA.org / PUBLIKASI / e-Santapan Harian / Versi Cetak Edisi 2 Sep 2025\",\n    \"scripture_reference\": \"Lukas 13:18-21\",\n    \"devotional_title\": \"Allah Bekerja Memakai Hal Kecil!\",\n    \"devotional_content\": [\n      \"Hal kecil sering dipandang sebelah mata, tidak dianggap dan dikesampingkan...\",\n      \"Dalam perumpamaan ini, Yesus mengajarkan bahwa Kerajaan Allah dimulai dari hal yang kecil...\"\n    ],\n    \"full_text\": \"Complete devotional text content here...\",\n    \"word_count\": 361\n  },\n  \"metadata\": {\n    \"url\": \"https://www.sabda.org/publikasi/e-sh/cetak/?tahun=2025&edisi=0902\",\n    \"scraped_at\": \"2025-09-03T22:05:10.806385\",\n    \"source\": \"SABDA.org\",\n    \"authenticated\": true,\n    \"auth_method\": \"JWT\"\n  }\n}"
+						},
+						{
+							"name": "Missing Authentication",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/sabda?year=2025&date=0902",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"sabda"
+									],
+									"query": [
+										{
+											"key": "year",
+											"value": "2025"
+										},
+										{
+											"key": "date",
+											"value": "0902"
+										}
+									]
+								}
+							},
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"error\",\n  \"message\": \"Authorization header is required\",\n  \"metadata\": {\n    \"error_type\": \"AuthenticationError\"\n  }\n}"
+						},
+						{
+							"name": "Invalid Parameters",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/sabda?date=0902",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"sabda"
+									],
+									"query": [
+										{
+											"key": "date",
+											"value": "0902"
+										}
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"error\",\n  \"message\": \"Year parameter is required (e.g., ?year=2025)\"\n}"
+						}
+					]
+				}
+			],
+			"description": "Endpoints for retrieving devotional content from SABDA.org"
+		},
+		{
+			"name": "System",
+			"item": [
+				{
+					"name": "Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Test for healthy service",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Service is healthy\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"success\");",
+									"    pm.expect(jsonData.message).to.include(\"healthy\");",
+									"    pm.expect(jsonData.data.service).to.eql(\"SABDA Scraper API\");",
+									"});",
+									"",
+									"pm.test(\"Response time is acceptable\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"health"
+							]
+						},
+						"description": "Check the health status of the SABDA Scraper API service.\n\n**Authentication:** Not required\n\n**Use this endpoint to:**\n- Verify the service is running\n- Check response times\n- Monitor service availability\n- Troubleshoot connectivity issues"
+					},
+					"response": [
+						{
+							"name": "Healthy Service",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/health",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"health"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"message\": \"Service is healthy\",\n  \"data\": {\n    \"service\": \"SABDA Scraper API\"\n  },\n  \"metadata\": {\n    \"timestamp\": \"2025-09-03T22:06:22.764629\"\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "API Documentation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Test for documentation endpoint",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Documentation contains API info\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"success\");",
+									"    pm.expect(jsonData.data.service).to.eql(\"SABDA Scraper API\");",
+									"    pm.expect(jsonData.data.version).to.exist;",
+									"    pm.expect(jsonData.data.endpoints).to.exist;",
+									"});",
+									"",
+									"pm.test(\"Flutter integration ready\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.metadata.flutter_ready).to.be.true;",
+									"    pm.expect(jsonData.metadata.cors_enabled).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								""
+							]
+						},
+						"description": "Get comprehensive API documentation and endpoint information.\n\n**Authentication:** Not required\n\n**Response includes:**\n- Service information and version\n- Available endpoints\n- Authentication details\n- Flutter integration status\n- CORS configuration"
+					},
+					"response": [
+						{
+							"name": "API Documentation",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										""
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"status\": \"success\",\n  \"message\": \"API documentation retrieved successfully\",\n  \"data\": {\n    \"service\": \"SABDA Scraper API\",\n    \"version\": \"2.0.0\",\n    \"endpoints\": {\n      \"authentication\": \"/api/auth/token\",\n      \"content\": \"/api/sabda\",\n      \"health\": \"/api/health\",\n      \"documentation\": \"/\"\n    },\n    \"authentication\": {\n      \"type\": \"JWT Bearer Token\",\n      \"expires_in\": \"24 hours\",\n      \"api_keys\": {\n        \"flutter\": \"sabda_flutter_2025_secure_key\",\n        \"mobile\": \"sabda_mobile_2025_secure_key\"\n      }\n    }\n  },\n  \"metadata\": {\n    \"timestamp\": \"2025-09-03T22:06:36.193111\",\n    \"cors_enabled\": true,\n    \"flutter_ready\": true,\n    \"architecture\": \"modular\"\n  }\n}"
+						}
+					]
+				}
+			],
+			"description": "System endpoints for health checks and API documentation"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Auto-refresh token if expired",
+					"const tokenExpiry = pm.environment.get('token_expires_at');",
+					"if (tokenExpiry) {",
+					"    const expiryDate = new Date(tokenExpiry);",
+					"    const now = new Date();",
+					"    const timeUntilExpiry = expiryDate.getTime() - now.getTime();",
+					"    ",
+					"    // If token expires in less than 5 minutes, clear it",
+					"    if (timeUntilExpiry < 300000) {",
+					"        pm.environment.unset('jwt_token');",
+					"        pm.environment.unset('token_expires_at');",
+					"        console.log('Token expired or expiring soon, cleared from environment');",
+					"    }",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test for response format",
+					"pm.test(\"Response follows standard format\", function () {",
+					"    if (pm.response.code === 200) {",
+					"        var jsonData = pm.response.json();",
+					"        pm.expect(jsonData).to.have.property('status');",
+					"        pm.expect(jsonData).to.have.property('message');",
+					"        pm.expect(jsonData.status).to.be.oneOf(['success', 'error']);",
+					"    }",
+					"});",
+					"",
+					"// Log response time",
+					"console.log('Response time: ' + pm.response.responseTime + 'ms');"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://sabda-scrapper.onrender.com",
+			"type": "string"
+		},
+		{
+			"key": "api_key",
+			"value": "sabda_flutter_2025_secure_key",
+			"type": "string"
+		},
+		{
+			"key": "year",
+			"value": "2025",
+			"type": "string"
+		},
+		{
+			"key": "date",
+			"value": "0902",
+			"type": "string"
+		}
+	]
+}

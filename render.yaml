@@ -24,3 +24,5 @@ services:
         value: "*"
       - key: GO_DEBUG
         value: "false"
+      - key: DEPLOYMENT_VERSION
+        value: "v2.1"
